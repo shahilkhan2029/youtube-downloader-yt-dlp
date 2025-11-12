@@ -5,10 +5,28 @@
   <title>YT Downloader — (yt-dlp)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* small inline style for cookie banner */
+    #cookie-banner {
+      display:none;
+      padding:10px;
+      margin:8px 0;
+      border-radius:6px;
+      background:#fff7e6;
+      border:1px solid #f0ad4e;
+    }
+    #cookie-banner strong { color:#a04a00; }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>YT Downloader (yt-dlp)</h1>
+
+    <!-- Cookie banner (hidden unless cookie_required) -->
+    <div id="cookie-banner" role="alert">
+      <strong>Verification required — please export cookies.txt</strong>
+      <div id="cookie-banner-text" style="margin-top:6px"></div>
+    </div>
 
     <div class="card">
       <label>YouTube URL (video or playlist):</label>
@@ -124,6 +142,27 @@ async function pollTask(taskId){
     const j = await res.json();
     el.querySelector('.status').innerText = j.status || 'unknown';
     const p = j.progress || {};
+
+    // show cookie required banner when backend instructs so
+    if (j.status === 'cookie_required' || (p && p.error === 'youtube_requires_cookies')) {
+      const banner = document.getElementById('cookie-banner');
+      const text = document.getElementById('cookie-banner-text');
+      banner.style.display = 'block';
+      text.innerHTML = `
+        YouTube is asking you to confirm you're not a bot. <br>
+        <strong>Steps:</strong>
+        <ol style="margin:6px 0 0 18px;padding:0">
+          <li>Open the browser where you are signed into YouTube and open the problem video.</li>
+          <li>Install a cookie exporter extension (search the extension store for "Get cookies.txt" or "cookies.txt exporter").</li>
+          <li>Export cookies in <strong>Netscape</strong> format and save the file as <code>cookies.txt</code>.</li>
+          <li>Place <code>cookies.txt</code> in the project root (the same folder as <code>app.py</code>), then refresh this page/UI.</li>
+        </ol>
+        <div style="margin-top:6px;color:#a00"><strong>Important:</strong> Do not share this <code>cookies.txt</code> file with anyone.</div>
+      `;
+      // Also show short message in the task progress
+      el.querySelector('.progress').innerText = p.message || 'YouTube requires cookies (see banner for steps).';
+      return;
+    }
 
     if (p.status === 'downloading') {
       let txt = '';
